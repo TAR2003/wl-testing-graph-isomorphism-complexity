@@ -45,9 +45,9 @@ export const PRESETS: GraphPreset[] = [
   },
   {
     id: "cfi-trap",
-    label: "CFI Trap",
+    label: "CFI Trap A",
     description:
-      "Cai-F\u00fcrer-Immerman-style trap: two non-isomorphic regular graphs that 1-WL cannot distinguish. Both stabilize with identical color histograms.",
+      "Non-isomorphic regular graphs that 1-WL often cannot separate. Useful to explain why color refinement has known limits.",
     icon: "\ud83e\udda0",
     rawA: `10
 1 2
@@ -81,6 +81,48 @@ export const PRESETS: GraphPreset[] = [
 10 7
 7 9
 9 6`,
+  },
+  {
+    id: "cfi-trap-b",
+    label: "CFI Trap B (2xTriangle vs C6)",
+    description:
+      "Graph A is two disjoint triangles while Graph B is one 6-cycle. Every node has degree 2, so 1-WL returns matching color counts even though they are not isomorphic.",
+    icon: "\ud83d\udca3",
+    rawA: `6
+1 2
+2 3
+3 1
+4 5
+5 6
+6 4`,
+    rawB: `6
+1 2
+2 3
+3 4
+4 5
+5 6
+6 1`,
+  },
+  {
+    id: "house-live-demo",
+    label: "House Live Demo",
+    description:
+      "Isomorphic house graphs with very different drawings and labels. Great for live demos: usually stabilizes in about 3 steps.",
+    icon: "\ud83c\udfe0",
+    rawA: `5
+1 2
+2 3
+3 4
+4 1
+1 5
+2 5`,
+    rawB: `5
+1 3
+3 5
+5 2
+2 1
+1 4
+3 4`,
   },
   {
     id: "path-vs-cycle",
