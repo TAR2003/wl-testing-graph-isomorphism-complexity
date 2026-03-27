@@ -156,13 +156,13 @@ export default function HomePage(): JSX.Element {
       <header className="glass mb-4 rounded-2xl p-4 md:p-6">
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
-            <p className="text-xs uppercase tracking-[0.2em] text-emerald-300/90">Graph Theory Lab</p>
+            <p className="text-xs uppercase tracking-[0.2em] text-emerald-300/90">CSE461-Algorithms</p>
             <h1 className="mt-1 text-2xl font-bold leading-tight md:text-4xl">
               Weisfeiler-Lehman (1-WL) Isomorphism Visualizer
             </h1>
             <p className="mt-2 max-w-3xl text-sm text-slate-300 md:text-base">
               Interactive refinement dashboard for comparing graph color partitions under the 1-WL
-              algorithm. Built for research demos, classroom lectures, and rapid intuition-building.
+              algorithm.
             </p>
           </div>
 
