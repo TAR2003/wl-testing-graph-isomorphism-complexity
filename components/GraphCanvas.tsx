@@ -4,7 +4,7 @@ import dynamic from "next/dynamic";
 import React, { useEffect, useMemo, useRef } from "react";
 
 import { getPaletteColor } from "@/lib/palette";
-import { GraphData, GraphLink, GraphNode } from "@/lib/types";
+import { GraphData, GraphLink, GraphLinkEndpoint, GraphNode } from "@/lib/types";
 
 interface GraphCanvasProps {
   graphData: GraphData;
@@ -12,6 +12,7 @@ interface GraphCanvasProps {
   width: number;
   height: number;
   step: number;
+  onNodePositionChange?: (nodeId: string, x: number, y: number) => void;
 }
 
 interface ForceGraph2DHandle {
@@ -23,12 +24,20 @@ interface ForceGraph2DProps {
   graphData: GraphData;
   width: number;
   height: number;
+  nodeId: string;
   backgroundColor: string;
   linkColor: string;
   linkWidth: number;
   enableNodeDrag: boolean;
   cooldownTicks: number;
   dagMode: null;
+  onNodeDragEnd?: (node: GraphNode) => void;
+  linkCanvasObject?: (
+    link: GraphLink,
+    context: CanvasRenderingContext2D,
+    globalScale: number,
+  ) => void;
+  linkCanvasObjectMode?: () => "after" | "before" | "replace";
   nodeCanvasObject: (node: GraphNode, context: CanvasRenderingContext2D) => void;
   onEngineStop?: () => void;
 }
@@ -47,8 +56,37 @@ export default function GraphCanvas({
   width,
   height,
   step,
+  onNodePositionChange,
 }: GraphCanvasProps): JSX.Element {
   const graphRef = useRef<ForceGraph2DHandle | null>(null);
+
+  const normalizeEndpoint = (endpoint: GraphLinkEndpoint): string | null => {
+    if (typeof endpoint === "string") {
+      return endpoint;
+    }
+    if (endpoint && typeof endpoint.id === "string") {
+      return endpoint.id;
+    }
+    return null;
+  };
+
+  const renderGraphData = useMemo<GraphData>(() => {
+    const links = graphData.links.reduce<GraphLink[]>((acc, link) => {
+      const source = normalizeEndpoint(link.source);
+      const target = normalizeEndpoint(link.target);
+      if (!source || !target) {
+        return acc;
+      }
+
+      acc.push({ source, target });
+      return acc;
+    }, []);
+
+    return {
+      nodes: graphData.nodes.map((node) => ({ ...node })),
+      links,
+    };
+  }, [graphData]);
 
   const activeColors = useMemo(() => {
     const counts: Record<number, number> = {};
@@ -64,7 +102,7 @@ export default function GraphCanvas({
 
   useEffect(() => {
     graphRef.current?.d3ReheatSimulation();
-  }, [graphData]);
+  }, [renderGraphData]);
 
   return (
     <section className="glass rounded-2xl p-3">
@@ -84,18 +122,51 @@ export default function GraphCanvas({
         ) : (
           <ForceGraph2D
             ref={graphRef}
-            graphData={graphData}
+            graphData={renderGraphData}
             width={Math.max(280, width)}
             height={height}
+            nodeId="id"
             backgroundColor="transparent"
-            linkColor="rgba(148,163,184,0.4)"
-            linkWidth={1.5}
+            linkColor="rgba(226,232,240,0.9)"
+            linkWidth={2.4}
             enableNodeDrag
             cooldownTicks={100}
             dagMode={null}
+            onNodeDragEnd={(node) => {
+              if (
+                onNodePositionChange &&
+                typeof node.id === "string" &&
+                typeof node.x === "number" &&
+                typeof node.y === "number"
+              ) {
+                onNodePositionChange(node.id, node.x, node.y);
+              }
+            }}
             onEngineStop={() => {
               graphRef.current?.d3Force("charge", null);
             }}
+            linkCanvasObject={(link, context) => {
+              const source = link.source as GraphNode;
+              const target = link.target as GraphNode;
+              if (
+                typeof source?.x !== "number" ||
+                typeof source?.y !== "number" ||
+                typeof target?.x !== "number" ||
+                typeof target?.y !== "number"
+              ) {
+                return;
+              }
+
+              context.beginPath();
+              context.moveTo(source.x, source.y);
+              context.lineTo(target.x, target.y);
+              context.strokeStyle = "rgba(226,232,240,0.95)";
+              context.lineWidth = 2;
+              context.globalAlpha = 0.95;
+              context.stroke();
+              context.globalAlpha = 1;
+            }}
+            linkCanvasObjectMode={() => "replace"}
             nodeCanvasObject={(node, context) => {
               const radius = 14;
               const fill = getPaletteColor(node.colorId);

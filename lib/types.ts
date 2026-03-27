@@ -4,11 +4,19 @@ export interface GraphNode {
   colorId: number;
   x?: number;
   y?: number;
+  fx?: number;
+  fy?: number;
 }
 
+export interface GraphLinkNodeRef {
+  id: string;
+}
+
+export type GraphLinkEndpoint = string | GraphLinkNodeRef;
+
 export interface GraphLink {
-  source: string;
-  target: string;
+  source: GraphLinkEndpoint;
+  target: GraphLinkEndpoint;
 }
 
 export interface GraphData {

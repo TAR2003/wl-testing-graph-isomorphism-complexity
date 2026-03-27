@@ -117,6 +117,7 @@ export default function HomePage(): JSX.Element {
     stepBackward,
     resetToStep0,
     loadPreset,
+    setNodePosition,
     canStepForward,
     canStepBackward,
   } = useWLEngine();
@@ -229,6 +230,7 @@ export default function HomePage(): JSX.Element {
               width={graphWidth}
               height={380}
               step={wlState.step}
+              onNodePositionChange={(nodeId, x, y) => setNodePosition("A", nodeId, x, y)}
             />
             <GraphCanvas
               graphData={wlState.graphB}
@@ -236,6 +238,7 @@ export default function HomePage(): JSX.Element {
               width={graphWidth}
               height={380}
               step={wlState.step}
+              onNodePositionChange={(nodeId, x, y) => setNodePosition("B", nodeId, x, y)}
             />
           </div>
 

@@ -1,6 +1,14 @@
 import { useCallback, useMemo, useState } from "react";
 
-import { GraphData, GraphLink, GraphNode, GraphPreset, WLState, WLStepRecord } from "@/lib/types";
+import {
+  GraphData,
+  GraphLink,
+  GraphLinkEndpoint,
+  GraphNode,
+  GraphPreset,
+  WLState,
+  WLStepRecord,
+} from "@/lib/types";
 
 interface WLStepSnapshot {
   step: number;
@@ -16,9 +24,32 @@ interface WLStepSnapshot {
 }
 
 const cloneGraphData = (graph: GraphData): GraphData => {
+  const normalizeEndpoint = (endpoint: GraphLinkEndpoint): string | null => {
+    if (typeof endpoint === "string") {
+      return endpoint;
+    }
+
+    if (endpoint && typeof endpoint.id === "string") {
+      return endpoint.id;
+    }
+
+    return null;
+  };
+
+  const links = graph.links.reduce<GraphLink[]>((acc, link) => {
+    const source = normalizeEndpoint(link.source);
+    const target = normalizeEndpoint(link.target);
+    if (!source || !target) {
+      return acc;
+    }
+
+    acc.push({ source, target });
+    return acc;
+  }, []);
+
   return {
     nodes: graph.nodes.map((node) => ({ ...node })),
-    links: graph.links.map((link) => ({ ...link })),
+    links,
   };
 };
 
@@ -102,6 +133,16 @@ export const parseGraph = (raw: string, prefix: "A" | "B"): GraphData => {
 };
 
 export const buildAdjacency = (graph: GraphData): Map<string, string[]> => {
+  const getEndpointId = (endpoint: GraphLinkEndpoint): string | null => {
+    if (typeof endpoint === "string") {
+      return endpoint;
+    }
+    if (endpoint && typeof endpoint.id === "string") {
+      return endpoint.id;
+    }
+    return null;
+  };
+
   const adjacencySets = new Map<string, Set<string>>();
 
   graph.nodes.forEach((node) => {
@@ -109,14 +150,20 @@ export const buildAdjacency = (graph: GraphData): Map<string, string[]> => {
   });
 
   graph.links.forEach((link) => {
-    const sourceSet = adjacencySets.get(link.source);
-    const targetSet = adjacencySets.get(link.target);
+    const sourceId = getEndpointId(link.source);
+    const targetId = getEndpointId(link.target);
+    if (!sourceId || !targetId) {
+      return;
+    }
+
+    const sourceSet = adjacencySets.get(sourceId);
+    const targetSet = adjacencySets.get(targetId);
     if (!sourceSet || !targetSet) {
       return;
     }
 
-    sourceSet.add(link.target);
-    targetSet.add(link.source);
+    sourceSet.add(targetId);
+    targetSet.add(sourceId);
   });
 
   const adjacency = new Map<string, string[]>();
@@ -306,6 +353,7 @@ export interface WLEngine {
   stepBackward: () => void;
   resetToStep0: () => void;
   loadPreset: (preset: GraphPreset) => void;
+  setNodePosition: (graph: "A" | "B", nodeId: string, x: number, y: number) => void;
   canStepForward: boolean;
   canStepBackward: boolean;
 }
@@ -531,6 +579,64 @@ export const useWLEngine = (): WLEngine => {
     }
   }, []);
 
+  const setNodePosition = useCallback(
+    (graph: "A" | "B", nodeId: string, x: number, y: number): void => {
+      setWlState((previous) => {
+        const nextGraphA = cloneGraphData(previous.graphA);
+        const nextGraphB = cloneGraphData(previous.graphB);
+        const targetGraph = graph === "A" ? nextGraphA : nextGraphB;
+        const targetNode = targetGraph.nodes.find((node) => node.id === nodeId);
+
+        if (!targetNode) {
+          return previous;
+        }
+
+        targetNode.x = x;
+        targetNode.y = y;
+        targetNode.fx = x;
+        targetNode.fy = y;
+
+        return {
+          ...previous,
+          graphA: nextGraphA,
+          graphB: nextGraphB,
+        };
+      });
+
+      setSnapshots((previous) => {
+        if (previous.length === 0) {
+          return previous;
+        }
+
+        const nextSnapshots = [...previous];
+        const last = nextSnapshots[nextSnapshots.length - 1];
+        if (!last) {
+          return previous;
+        }
+
+        const targetGraph = graph === "A" ? cloneGraphData(last.graphA) : cloneGraphData(last.graphB);
+        const targetNode = targetGraph.nodes.find((node) => node.id === nodeId);
+        if (!targetNode) {
+          return previous;
+        }
+
+        targetNode.x = x;
+        targetNode.y = y;
+        targetNode.fx = x;
+        targetNode.fy = y;
+
+        nextSnapshots[nextSnapshots.length - 1] = {
+          ...last,
+          graphA: graph === "A" ? targetGraph : last.graphA,
+          graphB: graph === "B" ? targetGraph : last.graphB,
+        };
+
+        return nextSnapshots;
+      });
+    },
+    [],
+  );
+
   const canStepForward = useMemo(() => {
     if (parseError) {
       return false;
@@ -555,6 +661,7 @@ export const useWLEngine = (): WLEngine => {
     stepBackward,
     resetToStep0,
     loadPreset,
+    setNodePosition,
     canStepForward,
     canStepBackward,
   };
