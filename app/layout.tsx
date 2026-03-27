@@ -16,7 +16,7 @@ const jetBrainsMono = JetBrains_Mono({
 export const metadata: Metadata = {
   title: "WL Graph Isomorphism Dashboard",
   description:
-    "Publication-grade interactive dashboard for visualizing the 1-WL graph isomorphism refinement process.",
+    "Interactive dashboard for visualizing the 1-WL graph isomorphism refinement process.",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }): JSX.Element {

@@ -168,7 +168,7 @@ export default function HomePage(): JSX.Element {
 
           <a
             className="inline-flex items-center gap-2 self-start rounded-full border border-white/15 bg-white/[0.04] px-4 py-2 text-sm hover:bg-white/[0.1]"
-            href="https://github.com"
+            href="https://github.com/TAR2003/wl-testing-graph-isomorphism-complexity"
             target="_blank"
             rel="noreferrer"
           >
